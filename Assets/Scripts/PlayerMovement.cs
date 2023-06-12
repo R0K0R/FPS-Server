@@ -17,6 +17,7 @@ public class PlayerMovement : MonoBehaviour
 
     private bool[] inputs;
     private float yVelocity;
+    private bool test;
     private bool didTeleport;
 
     private void OnValidate()
