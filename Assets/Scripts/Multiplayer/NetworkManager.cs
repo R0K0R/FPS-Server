@@ -24,7 +24,6 @@ public enum ClientToServerId : ushort
     name = 1,
     input,
     switchActiveWeapon,
-    primaryUse,
     reload,
 }
 
@@ -112,4 +111,6 @@ public class NetworkManager : MonoBehaviour
 
         Server.SendToAll(message);
     }
+
+    
 }

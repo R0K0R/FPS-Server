@@ -46,5 +46,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   type: 3
   gravity: 0
-  damage: 15
-  laserBounces: 3
+  damage: 5
+  shotSpeed: 0.1

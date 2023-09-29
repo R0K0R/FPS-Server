@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.20749143, g: 0.21147497, b: 0.14576834, a: 1}
+  m_IndirectSpecularColor: {r: 0.18092722, g: 0.1844041, b: 0.1271154, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -104,7 +104,7 @@ NavMeshSettings:
   serializedVersion: 2
   m_ObjectHideFlags: 0
   m_BuildSettings:
-    serializedVersion: 2
+    serializedVersion: 3
     agentTypeID: 0
     agentRadius: 0.5
     agentHeight: 2
@@ -117,7 +117,7 @@ NavMeshSettings:
     cellSize: 0.16666667
     manualTileSize: 0
     tileSize: 256
-    accuratePlacement: 0
+    buildHeightMesh: 0
     maxJobWorkers: 0
     preserveTilesOutsideBounds: 0
     debug:
@@ -134,6 +134,8 @@ GameObject:
   - component: {fileID: 1006999222}
   - component: {fileID: 1006999221}
   - component: {fileID: 1006999223}
+  - component: {fileID: 1006999224}
+  - component: {fileID: 1006999225}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -165,6 +167,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -186,3 +189,31 @@ MonoBehaviour:
   bulletPrefab: {fileID: 2677245372247600153, guid: 9fd7a594c7323354b9be85f76327e3c4, type: 3}
   teleporterPrefab: {fileID: 8340005456037708280, guid: efc1f10ea216ada4bb550516dbfa43a8, type: 3}
   laserPrefab: {fileID: 8340005456037708280, guid: 32d8b6e19756b1c4bbe5d98ef90f55e4, type: 3}
+--- !u!114 &1006999224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1006999220}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32e359817f2f6114c8aee587791ff1b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  amount: 5
+--- !u!114 &1006999225
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1006999220}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1e463a84bf17cc4f8f0006df8648737, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pistol: {fileID: 864872639302911519, guid: 839fcc66cc61eef4ea098ac0c6f6f944, type: 3}
+  laserGun: {fileID: 864872639302911519, guid: 83d90583635ae5a4b81f5c92cd3ffe4f, type: 3}
+  teleporterGun: {fileID: 8491485025775312824, guid: 3c8120b06bef30a47b47893a7c3fa180, type: 3}

@@ -1,6 +1,7 @@
 using Riptide;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public enum Team : byte
@@ -20,11 +21,15 @@ public class Player : MonoBehaviour
     public bool IsAlive => health > 0f;
     public PlayerMovement Movement => movement;
 
+    public float timeFromLastHurt = 0;
+
+    public Gun activeGun = null;
+
     [SerializeField] private float respawnSeconds;
-    [SerializeField] private float health;
-    [SerializeField] private float maxHealth;
+    [SerializeField] public float health;
+    [SerializeField] public float maxHealth;
     [SerializeField] private PlayerMovement movement;
-    [SerializeField] private WeaponManager weaponManager;
+    [SerializeField] public WeaponManager weaponManager;
 
     public Team team;
 
@@ -41,6 +46,11 @@ public class Player : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    private void FixedUpdate()
+    {
+        timeFromLastHurt+= Time.fixedDeltaTime;
+    }
+
     private void OnDestroy()
     {
         list.Remove(Id);
@@ -55,7 +65,26 @@ public class Player : MonoBehaviour
             Die();
         }
         else
+        {
             SendHealthChanged();
+            timeFromLastHurt = 0;
+        }
+    }
+
+    public void PrimaryUsePressed()
+    {
+        if (activeGun == null) {
+            return;
+        }
+        activeGun.Shoot();
+    }
+
+    public void Reload()
+    {
+        if (activeGun == null)
+            return;
+
+        activeGun.Reload();
     }
 
     private void Die()
@@ -78,7 +107,7 @@ public class Player : MonoBehaviour
         movement.Enabled(true);
 
         health = maxHealth;
-        weaponManager.ResetWeapons();
+        ResetWeapons();
         SendRespawned();
     }
 
@@ -99,13 +128,14 @@ public class Player : MonoBehaviour
         player.name = $"Player {id} ({(string.IsNullOrEmpty(username) ? "Guest" : username)})";
         player.Id = id;
         player.Username = string.IsNullOrEmpty(username) ? $"Guest {id}" : username;
-        player.team = id % 2 == 0 ? Team.orange : Team.green; // NOTE: if players leave this can lead to uneven teams (eg: player 2 leaves, rejoins as player 3, now the only 2 players in the game are on the same team because both their IDs are odd numbers)
+        player.team = list.Count % 2 == 0 ? Team.orange : Team.green; // NOTE: if players leave this can lead to uneven teams (eg: player 2 leaves, rejoins as player 3, now the only 2 players in the game are on the same team because both their IDs are odd numbers)
 
         if (GameLogic.Singleton.IsGameInProgress)
             player.TeleportToTeamSpawnpoint(); // Ensure players joining into an ongoing game are spawned at their team's spawnpoint
 
         player.SendSpawned();
         list.Add(id, player);
+        player.ResetWeapons();
     }
 
     #region Messages
@@ -119,6 +149,12 @@ public class Player : MonoBehaviour
         NetworkManager.Singleton.Server.Send(AddSpawnData(Message.Create(MessageSendMode.Reliable, ServerToClientId.playerSpawned)), toClientId);
     }
 
+    public void ResetWeapons()
+    {
+        GameObject randomGun = Guns.getRandomGun();
+        weaponManager.SetActiveWeapon(randomGun, this);
+    }
+
     private Message AddSpawnData(Message message)
     {
         message.AddUShort(Id);
@@ -128,7 +164,7 @@ public class Player : MonoBehaviour
         return message;
     }
 
-    private void SendHealthChanged()
+    public void SendHealthChanged()
     {
         Message message = Message.Create(MessageSendMode.Reliable, ServerToClientId.playerHealthChanged);
         message.AddFloat(health);
@@ -161,28 +197,14 @@ public class Player : MonoBehaviour
     private static void Input(ushort fromClientId, Message message)
     {
         if (list.TryGetValue(fromClientId, out Player player))
-            player.Movement.SetInput(message.GetBools(6), message.GetVector3());
-    }
-
-    [MessageHandler((ushort)ClientToServerId.switchActiveWeapon)]
-    private static void SwitchActiveWeapon(ushort fromClientId, Message message)
-    {
-        if (list.TryGetValue(fromClientId, out Player player))
-            player.weaponManager.SetActiveWeapon((WeaponType)message.GetByte());
-    }
-
-    [MessageHandler((ushort)ClientToServerId.primaryUse)]
-    private static void PrimaryUse(ushort fromClientId, Message message)
-    {
-        if (list.TryGetValue(fromClientId, out Player player))
-            player.weaponManager.PrimaryUsePressed();
+            player.Movement.SetInput(message.GetBools(7), message.GetVector3());
     }
 
     [MessageHandler((ushort)ClientToServerId.reload)]
     private static void Reload(ushort fromClientId, Message message)
     {
         if (list.TryGetValue(fromClientId, out Player player))
-            player.weaponManager.Reload();
+            player.Reload();
     }
     #endregion
 }

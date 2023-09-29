@@ -1,15 +1,16 @@
 using Riptide;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
     public static Dictionary<ushort, Projectile> list = new Dictionary<ushort, Projectile>();
 
-    [SerializeField] private WeaponType type;
     [SerializeField] private float gravity;
     [SerializeField] private float damage;
-    [SerializeField] private int laserBounces;
+    [SerializeField] protected float shotSpeed;
 
     private ushort id;
     private Player shooter;
@@ -20,6 +21,22 @@ public class Projectile : MonoBehaviour
     {
         gravityAcceleration = gravity * Time.fixedDeltaTime * Time.fixedDeltaTime;
         transform.rotation = Quaternion.LookRotation(velocity);
+    }
+
+    private void Awake()
+    {
+        ushort id = NextId;
+        this.name = $"Projectile {id}";
+        this.id = id;
+        this.velocity = this.gameObject.transform.forward;
+
+        list.Add(id, this);
+    }
+
+    public void Setting(Player shooter, float damage)
+    {
+        this.shooter = shooter;
+        this.damage = damage;
     }
 
     private void FixedUpdate()
@@ -55,17 +72,8 @@ public class Projectile : MonoBehaviour
 
     private void Hit(RaycastHit hitInfo)
     {
-        if (type == WeaponType.teleporter)
+        if (shooter.activeGun is TeleporterGun)
             shooter.Movement.Teleport(hitInfo.point + hitInfo.normal);
-        else if (type == WeaponType.laser && laserBounces > 0)
-        {
-            // Allow lasers to bounce off objects, doing more damage with each bounce
-            transform.position = hitInfo.point;
-            velocity = Vector3.Reflect(velocity, hitInfo.normal);
-            damage *= 1.5f;
-            laserBounces--;
-            return;
-        }
 
         Collide(hitInfo.point);
     }
@@ -73,20 +81,7 @@ public class Projectile : MonoBehaviour
     {
         Collide(hitInfo.point);
 
-        switch (type)
-        {
-            case WeaponType.pistol:
-            case WeaponType.laser:
-                player.TakeDamage(damage);
-                SendHitmarker();
-                break;
-            case WeaponType.teleporter:
-                shooter.Movement.Teleport(hitInfo.point + hitInfo.normal);
-                break;
-            default:
-                Debug.LogError($"Can't execute hit logic for unknown projectile type '{type}'!");
-                break;
-        }
+        if(shooter.activeGun.hit(hitInfo, player)) SendHitmarker();
     }
 
     private void OnDestroy()
@@ -94,31 +89,17 @@ public class Projectile : MonoBehaviour
         list.Remove(id);
     }
 
-    public static void Spawn(Player shooter, WeaponType type, Vector3 position, Vector3 initialVelocity)
+    public static void Spawn(Player shooter, float damage, Vector3 position, Vector3 initialVelocity)
     {
         Projectile projectile;
-        switch (type)
-        {
-            case WeaponType.pistol:
-                projectile = Instantiate(GameLogic.Singleton.BulletPrefab, position, Quaternion.LookRotation(initialVelocity)).GetComponent<Projectile>();
-                break;
-            case WeaponType.teleporter:
-                projectile = Instantiate(GameLogic.Singleton.TeleporterPrefab, position, Quaternion.LookRotation(initialVelocity)).GetComponent<Projectile>();
-                break;
-            case WeaponType.laser:
-                projectile = Instantiate(GameLogic.Singleton.LaserPrefab, position, Quaternion.LookRotation(initialVelocity)).GetComponent<Projectile>();
-                break;
-            default:
-                Debug.LogError($"Can't spawn unknown projectile type '{type}'!");
-                return;
-        }
+        projectile = Instantiate(shooter.activeGun.bullet, position, Quaternion.LookRotation(initialVelocity)).GetComponent<Projectile>();
 
         ushort id = NextId;
         projectile.name = $"Projectile {id}";
         projectile.id = id;
         projectile.shooter = shooter;
-        projectile.type = type;
         projectile.velocity = initialVelocity;
+        projectile.damage= damage;
 
         projectile.SendSpawned();
         list.Add(id, projectile);
@@ -135,7 +116,7 @@ public class Projectile : MonoBehaviour
     {
         Message message = Message.Create(MessageSendMode.Reliable, ServerToClientId.projectileSpawned);
         message.AddUShort(id);
-        message.AddByte((byte)type);
+        message.AddInt(Guns.getGunIndex(shooter.activeGun));
         message.AddUShort(shooter.Id);
         message.AddVector3(transform.position);
         message.AddVector3(transform.forward);
@@ -146,6 +127,7 @@ public class Projectile : MonoBehaviour
     {
         Message message = Message.Create(MessageSendMode.Unreliable, ServerToClientId.projectileMovement);
         message.AddUShort(id);
+        message.AddUShort(NetworkManager.Singleton.CurrentTick);
         message.AddVector3(transform.position);
         NetworkManager.Singleton.Server.SendToAll(message);
     }

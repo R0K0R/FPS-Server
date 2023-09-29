@@ -33,7 +33,7 @@ public class PlayerMovement : MonoBehaviour
     {
         Initialize();
 
-        inputs = new bool[6];
+        inputs = new bool[7];
     }
 
     private void FixedUpdate()
@@ -53,7 +53,8 @@ public class PlayerMovement : MonoBehaviour
 
         if (inputs[3])
             inputDirection.x += 1;
-
+        if (inputs[6])
+            player.PrimaryUsePressed();
         Move(inputDirection, inputs[4], inputs[5]);
     }
 

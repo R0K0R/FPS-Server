@@ -1,78 +1,39 @@
 using Riptide;
+using System;
+using System.Linq;
 using UnityEngine;
 
 public class WeaponManager : MonoBehaviour
 {
-    [SerializeField] private Player player;
-    [SerializeField] private Gun pistol;
+    [SerializeField] private GameObject pistol;
     [SerializeField] private Gun teleporter;
     [SerializeField] private Gun laser;
     
     private WeaponType activeType;
-    private Gun activeWeapon;
 
-    private void OnValidate()
+    public void SetActiveWeapon(GameObject gun, Player player)
     {
-        if (player == null)
-            player = GetComponent<Player>();
-    }
-
-    public void SetActiveWeapon(WeaponType type)
-    {
-        if (activeType == type)
-            return;
-
-        switch (type)
+        if (gun != null && player != null)
         {
-            case WeaponType.none:
-                activeWeapon = null;
-                break;
-            case WeaponType.pistol:
-                activeWeapon = pistol;
-                break;
-            case WeaponType.teleporter:
-                activeWeapon = teleporter;
-                break;
-            case WeaponType.laser:
-                activeWeapon = laser;
-                break;
-            default:
-                Debug.LogError($"Can't set unknown weapon type '{type}' as active!");
-                return;
+            player.activeGun = gun.GetComponentsInChildren<Gun>()[0];
+            player.activeGun.shooter = player;
+            SendActiveWeaponUpdate(player);
         }
-
-        activeType = type;
-        SendActiveWeaponUpdate(type);
+        else
+        {
+            Debug.LogError("Something is wrong");
+        }
     }
 
-    public void PrimaryUsePressed()
-    {
-        if (activeWeapon == null)
-            return;
+    #region Messages
 
-        activeWeapon.Shoot();
-    }
-
-    public void Reload()
-    {
-        if (activeWeapon == null)
-            return;
-
-        activeWeapon.Reload();
-    }
-
-    public void ResetWeapons()
-    {
-        pistol.ResetAmmo();
-        teleporter.ResetAmmo();
-        laser.ResetAmmo();
-    }
-
-    private void SendActiveWeaponUpdate(WeaponType type)
+    private void SendActiveWeaponUpdate(Player player)
     {
         Message message = Message.Create(MessageSendMode.Reliable, ServerToClientId.playerActiveWeaponUpdated);
         message.AddUShort(player.Id);
-        message.AddByte((byte)type);
+        message.AddInt(Guns.getGunIndex(player.activeGun));
         NetworkManager.Singleton.Server.SendToAll(message);
     }
+
+    #endregion
 }

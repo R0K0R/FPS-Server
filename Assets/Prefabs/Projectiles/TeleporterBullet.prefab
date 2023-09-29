@@ -47,4 +47,4 @@ MonoBehaviour:
   type: 2
   gravity: -9.81
   damage: 10
-  laserBounces: 0
+  shotSpeed: 10
